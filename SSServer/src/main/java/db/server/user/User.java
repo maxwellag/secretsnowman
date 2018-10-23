@@ -1,18 +1,36 @@
 package db.server.user;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import db.server.group.Party;
+
+import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class User {
+
+    public User() {
+        id = -1;
+        parties = new ArrayList<>();
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private int id;
 
-    private String userName;
+    private String username;
+
+    private String password;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "User_Party",
+            joinColumns = @JoinColumn(name = "User_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "Party_id", referencedColumnName = "id"))
+    @JsonBackReference
+    private List<Party> parties;
 
     public int getId() {
         return id;
@@ -21,10 +39,38 @@ public class User {
         this.id = id;
     }
 
-    public String getUserName() {
-        return userName;
+    public String getUsername() {
+        return username;
     }
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public List<Party> getParties() {
+        return parties;
+    }
+    public void setParties(List<Party> parties) {
+        this.parties = parties;
+    }
+
+    /**
+     * Returns true if the two Users have the same id, disregards other fields
+     * @param o The other User to be compared
+     * @return True if the two Users have the same id
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof User) {
+            User u = (User) o;
+            return this.getId() == u.getId();
+        } else
+            return false;
     }
 }
