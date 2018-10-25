@@ -21,6 +21,11 @@ public class PartyController {
         return partyService.makeParty(owner.getId());
     }
 
+    @RequestMapping("/get/{partyId}")
+    public Party getParty(@PathVariable int partyId) {
+        return partyService.getParty(partyId);
+    }
+
     @RequestMapping("/addMember/{partyId}")
     public void addMember(@RequestBody User member, @PathVariable int partyId) {
         partyService.addMember(partyId, member);

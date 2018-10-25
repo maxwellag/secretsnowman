@@ -1,5 +1,6 @@
 package db.server.user;
 
+import db.server.group.Party;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -87,6 +88,16 @@ public class UserService {
                 return userRepository.findById(userId).get() != null;
             } catch (NoSuchElementException e) {
                 return false;
+            }
+        }
+    }
+
+    public void addPartyToUserInternal(User member, Party party) {
+        member = getUser(member.getId());
+        if (member != null) {
+            if (!member.getParties().contains(party)) {
+                member.getParties().add(party);
+                userRepository.save(member);
             }
         }
     }

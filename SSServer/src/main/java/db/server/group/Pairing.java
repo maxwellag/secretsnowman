@@ -1,6 +1,7 @@
 package db.server.group;
 
 import db.server.user.User;
+import javafx.util.Pair;
 
 import javax.persistence.*;
 
@@ -12,11 +13,17 @@ public class Pairing {
     private int id;
 
     @ManyToOne
+    private Party party;
+
+    @ManyToOne
     private User gifter, receiver;
 
-    public Pairing(User gifter, User receiver) {
+    public Pairing() {}
+
+    Pairing(User gifter, User receiver, Party p) {
         this.gifter = gifter;
         this.receiver = receiver;
+        this.party = p;
     }
 
     public int getId() {
@@ -24,6 +31,13 @@ public class Pairing {
     }
     public void setId(int id) {
         this.id = id;
+    }
+
+    public Party getParty() {
+        return party;
+    }
+    public void setParty(Party party) {
+        this.party = party;
     }
 
     public User getGifter() {

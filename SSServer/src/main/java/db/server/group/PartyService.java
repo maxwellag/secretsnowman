@@ -5,15 +5,16 @@ import db.server.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.lang.reflect.Member;
+import java.util.*;
 
 @Service
 public class PartyService {
 
     @Autowired
     private PartyRepository partyRepository;
+    @Autowired
+    private PairingRepository pairingRepository;
     @Autowired
     private UserService userService;
 
@@ -41,19 +42,19 @@ public class PartyService {
 
     public void addMember(int groupId, User member) {
         Party party = getPartyById(groupId);
-        if (party == null)
-            return;
-        else {
-            party.addMember(member);
-            partyRepository.save(party);
+        if (party != null) {
+            member = userService.getUser(member.getId());
+            if (!member.equals(new User())) {
+                party.addMember(member);
+                userService.addPartyToUserInternal(member, party);
+                partyRepository.save(party);
+            }
         }
     }
 
     public void removeMember(int groupId, User member) {
         Party party = getPartyById(groupId);
-        if (party == null)
-            return;
-        else {
+        if (party != null) {
             party.removeMember(member);
             partyRepository.save(party);
         }
@@ -64,8 +65,8 @@ public class PartyService {
         if (party == null) {
             return new Party(null);
         } else {
-            party.assignPairings();
-            return party;
+            randomizePairings(party);
+            return partyRepository.save(party);
         }
     }
 
@@ -98,5 +99,54 @@ public class PartyService {
             return new ArrayList<>();
         else
             return savedUser.getParties();
+    }
+
+    private void randomizePairings(Party party) {
+        List<User> members = party.getMembers();
+        if (members.size() < 2)
+            return;
+        resetPartyPairings(party);       // erase old pairings
+        Random rand = new Random();
+        Stack<User> receivers = new Stack<>();      // for convenience of keeping track of what's left and quick remove
+        HashSet<Integer> used = new HashSet<>();    // used in initial setup of stack
+        for (int i = 0; i < members.size(); i++) {
+            int selection = Math.abs(rand.nextInt()) % members.size();      // get random index to start at
+            while (used.contains(selection)) {                              // if this index has been used already
+                selection = (selection + 1) % members.size();
+            }
+            used.add(selection);
+            receivers.push(members.get(selection));
+        }
+        for (User gifter : members) {          // iterate through each member, popping a member off stack
+            User receiver = receivers.pop();
+            if (receiver.equals(gifter)) {          // get the next member and replace old receiver onto stack
+                if (receivers.isEmpty()) {                  // illegal state, try again
+                    randomizePairings(party);
+                    return;
+                } else {
+                    User temp = receiver;
+                    receiver = receivers.pop();
+                    receivers.push(temp);
+                }
+            }
+            Pairing p = new Pairing(gifter, receiver, party);
+            pairingRepository.save(p);
+            party.getPairings().add(p);
+        }
+    }
+
+    private void resetPartyPairings(Party party) {
+        for (Pairing p : pairingRepository.findByParty_Id(party.getId()))   // Pairings may not be fetched automatically
+            pairingRepository.delete(p);
+        party.setPairings(new ArrayList<>());
+    }
+
+
+    public Party getParty(int partyId) {
+        try {
+            return partyRepository.findById(partyId).get();
+        } catch (NoSuchElementException e) {
+            return new Party();
+        }
     }
 }

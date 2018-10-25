@@ -1,13 +1,10 @@
 package db.server.group;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import db.server.user.User;
+import javafx.util.Pair;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Entity
 public class Party {
@@ -25,13 +22,20 @@ public class Party {
     @OneToMany
     private List<Pairing> pairings;
 
-    public Party() {}
+    Party() {}
 
-    public Party(User owner) {
+    Party(User owner) {
         id = -1;
         this.owner = owner;
         members = new ArrayList<>();
         pairings = new ArrayList<>();
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+    public int getId() {
+        return id;
     }
 
     public void setOwner(User owner) {
@@ -42,9 +46,7 @@ public class Party {
     }
 
     public void addMember(User member) {
-        if (members.contains(member))
-            return;
-        else
+        if (!members.contains(member))
             members.add(member);
     }
 
@@ -56,9 +58,12 @@ public class Party {
     public List<Pairing> getPairings() {
         return pairings;
     }
-
-    public void assignPairings() {
-        // TODO
+    public void setPairings(List<Pairing> pairings) {
+        this.pairings = pairings;
     }
 
+
+    public List<User> getMembers() {
+        return members;
+    }
 }
