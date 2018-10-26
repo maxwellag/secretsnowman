@@ -1,10 +1,10 @@
-package db.server.group;
+package db.server.party;
 
 import db.server.user.User;
-import javafx.util.Pair;
 
 import javax.persistence.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class Party {
@@ -16,17 +16,23 @@ public class Party {
     @ManyToOne
     private User owner;
 
-    @ManyToMany(mappedBy = "parties", fetch = FetchType.EAGER)
+    private String partyName;
+
+    @Column(columnDefinition = "varchar", length = 1024)
+    private String description;
+
+    @ManyToMany(mappedBy = "parties")
     private List<User> members;
 
-    @OneToMany
+    @OneToMany(fetch = FetchType.EAGER)
     private List<Pairing> pairings;
 
     Party() {}
 
-    Party(User owner) {
+    Party(User owner, String partyName) {
         id = -1;
         this.owner = owner;
+        this.partyName = partyName;
         members = new ArrayList<>();
         pairings = new ArrayList<>();
     }
@@ -46,8 +52,9 @@ public class Party {
     }
 
     public void addMember(User member) {
-        if (!members.contains(member))
+        if (!members.contains(member)) {
             members.add(member);
+        }
     }
 
     public void removeMember(User member) {

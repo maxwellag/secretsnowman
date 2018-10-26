@@ -1,7 +1,6 @@
-package db.server.group;
+package db.server.party;
 
 import db.server.user.User;
-import javafx.util.Pair;
 
 import javax.persistence.*;
 

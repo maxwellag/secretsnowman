@@ -1,6 +1,5 @@
-package db.server.group;
+package db.server.party;
 
-import javafx.util.Pair;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.List;

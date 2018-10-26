@@ -1,9 +1,7 @@
 package db.server.user;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import db.server.group.Party;
+import db.server.party.Party;
 
 import javax.persistence.*;
 import java.util.ArrayList;

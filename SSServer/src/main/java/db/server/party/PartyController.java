@@ -1,4 +1,4 @@
-package db.server.group;
+package db.server.party;
 
 import db.server.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,14 +16,19 @@ public class PartyController {
     @Autowired
     private PartyService partyService;
 
-    @RequestMapping("/make")
-    public Party makeParty(@RequestBody User owner) {
-        return partyService.makeParty(owner.getId());
+    @RequestMapping("/make/{partyName}")
+    public Party makeParty(@RequestBody User owner, @PathVariable String partyName) {
+        return partyService.makeParty(owner.getId(), partyName);
     }
 
     @RequestMapping("/get/{partyId}")
     public Party getParty(@PathVariable int partyId) {
         return partyService.getParty(partyId);
+    }
+
+    @RequestMapping("/getParties")
+    public List<Party> getPartiesWithMember(@RequestBody User member) {
+        return partyService.getPartiesWithMemberId(member.getId());
     }
 
     @RequestMapping("/addMember/{partyId}")
@@ -41,14 +46,9 @@ public class PartyController {
         partyService.makePairings(partyId);
     }
 
-    @RequestMapping("/getParties")
-    public List<Party> getParties(@RequestBody User member) {
-        return partyService.getParties(member);
-    }
-
     @RequestMapping("/getReceiver/{partyId}")
     public User getReceiver(@RequestBody User gifter, @PathVariable int partyId) {
-        return partyService.getGiftReceiver(partyId, gifter.getId());
+        return partyService.getGiftReceiver(partyId, gifter);
     }
 
 }

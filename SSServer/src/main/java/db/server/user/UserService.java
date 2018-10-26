@@ -1,6 +1,6 @@
 package db.server.user;
 
-import db.server.group.Party;
+import db.server.party.Party;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

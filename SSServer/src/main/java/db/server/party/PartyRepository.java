@@ -1,4 +1,4 @@
-package db.server.group;
+package db.server.party;
 
 import org.springframework.data.repository.CrudRepository;
 
