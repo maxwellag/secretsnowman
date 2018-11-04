@@ -3,19 +3,12 @@ package db.server.user;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Hashtable;
-
 @RestController
 @RequestMapping(path="/users")
 public class UserController {
 
     @Autowired
     private UserService userService;
-
-    @RequestMapping("/test")
-    private String test() {
-        return "Test";
-    }
 
     /**
      * Adds a user from the specified body, if one doesn't already exist

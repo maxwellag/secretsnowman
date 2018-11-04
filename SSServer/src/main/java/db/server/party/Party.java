@@ -18,13 +18,13 @@ public class Party {
 
     private String partyName;
 
-    @Column(columnDefinition = "varchar", length = 1024)
-    private String description;
+    //@Column(columnDefinition = "varchar", length = 1024)
+    //private String description;
 
     @ManyToMany(mappedBy = "parties")
     private List<User> members;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany
     private List<Pairing> pairings;
 
     Party() {}
@@ -68,7 +68,9 @@ public class Party {
     public void setPairings(List<Pairing> pairings) {
         this.pairings = pairings;
     }
-
+    public void addPairing(Pairing p) {
+        this.pairings.add(p);
+    }
 
     public List<User> getMembers() {
         return members;

@@ -1,5 +1,6 @@
 package db.server.party;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import db.server.user.User;
 
 import javax.persistence.*;
@@ -12,6 +13,7 @@ public class Pairing {
     private int id;
 
     @ManyToOne
+    @JsonIgnore
     private Party party;
 
     @ManyToOne

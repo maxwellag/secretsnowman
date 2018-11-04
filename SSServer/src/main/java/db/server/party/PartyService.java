@@ -53,7 +53,7 @@ public class PartyService {
                 party.addMember(member);
                 userService.addPartyToUserInternal(member, party);
                 Pairing p = new Pairing(member, null, party);
-                party.getPairings().add(p);
+                party.addPairing(p);
                 pairingRepository.save(p);
                 return partyRepository.save(party);
             }
@@ -157,7 +157,7 @@ public class PartyService {
             pairings.add(p);
             pairingRepository.save(p);
         }
-
+        party.setPairings(pairings);
     }
 
 
