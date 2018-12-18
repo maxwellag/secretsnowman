@@ -78,4 +78,8 @@ public class User {
         } else
             return false;
     }
+
+    public int hashCode() {
+        return id;
+    }
 }

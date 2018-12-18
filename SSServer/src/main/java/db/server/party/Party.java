@@ -27,6 +27,8 @@ public class Party {
     @OneToMany
     private List<Pairing> pairings;
 
+    private boolean pairingsAssigned;
+
     Party() {}
 
     Party(User owner, String partyName) {
@@ -35,6 +37,7 @@ public class Party {
         this.partyName = partyName;
         members = new ArrayList<>();
         pairings = new ArrayList<>();
+        pairingsAssigned = false;
     }
 
     public void setId(int id) {
@@ -56,10 +59,16 @@ public class Party {
             members.add(member);
         }
     }
-
-    public void removeMember(User member) {
+    public Pairing removeMember(User member) {
         members.remove(member);
-        // TODO adjust pairings
+        if (pairings == null || pairings.isEmpty())
+            return null;
+        for (int i = 0; i < pairings.size(); i++)
+            if (pairings.get(i).getGifter().equals(member)) {
+                Pairing ret = pairings.remove(i);
+                return ret;
+            }
+        return null;
     }
 
     public List<Pairing> getPairings() {
@@ -70,6 +79,13 @@ public class Party {
     }
     public void addPairing(Pairing p) {
         this.pairings.add(p);
+    }
+
+    public void setPairingsAssigned(boolean value) {
+        pairingsAssigned = value;
+    }
+    public boolean arePairingsAssigned() {
+        return pairingsAssigned;
     }
 
     public List<User> getMembers() {
