@@ -1,7 +1,6 @@
 package db.server.user;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import db.server.party.Party;
 
 import javax.persistence.*;
@@ -23,7 +22,6 @@ public class User {
 
     private String username;
 
-    @JsonIgnore
     private String password;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -47,11 +45,11 @@ public class User {
         this.username = username;
     }
 
-    public String getPassword() {
-        return password;
-    }
     public void setPassword(String password) {
         this.password = password;
+    }
+    public void setPassword(User other) {
+        this.password = other.password;
     }
 
     public List<Party> getParties() {
@@ -59,6 +57,12 @@ public class User {
     }
     public void setParties(List<Party> parties) {
         this.parties = parties;
+    }
+
+    public boolean passwordMatch(User other) {
+        if (password == null)
+            return false;
+        return password.equals(other.password);
     }
 
     /**

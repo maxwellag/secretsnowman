@@ -40,7 +40,7 @@ public class UserService {
         List<User> users = userRepository.findByUsername(user.getUsername());
         if (users == null || users.size() != 1)
             return new User();
-        if (users.get(0).getPassword().equals(user.getPassword()))
+        if (users.get(0).passwordMatch(user))
             return users.get(0);
         else
             return new User();
@@ -59,7 +59,7 @@ public class UserService {
             return new User();      // No User with that ID was found
         }
         oldUser.setUsername(user.getUsername());
-        oldUser.setPassword(user.getPassword());
+        oldUser.setPassword(user);
         oldUser.setParties(user.getParties());
         return userRepository.save(oldUser);
     }
