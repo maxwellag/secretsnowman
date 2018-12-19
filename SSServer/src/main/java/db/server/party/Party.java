@@ -18,8 +18,7 @@ public class Party {
 
     private String partyName;
 
-    //@Column(columnDefinition = "varchar", length = 1024)
-    //private String description;
+    private String description;
 
     @ManyToMany(mappedBy = "parties")
     private List<User> members;
@@ -31,10 +30,11 @@ public class Party {
 
     Party() {}
 
-    Party(User owner, String partyName) {
+    Party(User owner, String partyName, String description) {
         id = -1;
         this.owner = owner;
         this.partyName = partyName;
+        this.description = description;
         members = new ArrayList<>();
         pairings = new ArrayList<>();
         pairingsAssigned = false;
@@ -53,6 +53,21 @@ public class Party {
     public User getOwner() {
         return owner;
     }
+
+    public void setPartyName(String partyName) {
+        this.partyName = partyName;
+    }
+    public String getPartyName() {
+        return partyName;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    public String getDescription() {
+        return description;
+    }
+
 
     public void addMember(User member) {
         if (!members.contains(member)) {

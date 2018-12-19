@@ -16,9 +16,10 @@ public class PartyController {
     @Autowired
     private PartyService partyService;
 
-    @RequestMapping("/make/{partyName}")
-    public Party makeParty(@RequestBody User owner, @PathVariable String partyName) {
-        return partyService.makeParty(owner.getId(), partyName);
+    @RequestMapping("/make/{ownerId}/{partyName}")
+    public Party makeParty(@RequestBody String[] description, @PathVariable int ownerId,
+                           @PathVariable String partyName) {
+        return partyService.makeParty(ownerId, partyName, description[0]);
     }
 
     @RequestMapping("/get/{partyId}")

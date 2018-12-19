@@ -17,10 +17,10 @@ public class PartyService {
     @Autowired
     private UserService userService;
 
-    public Party makeParty(int ownerId, String partyName) {
+    public Party makeParty(int ownerId, String partyName, String description) {
         if (userService.userExists(ownerId)) {
             User owner = userService.getUser(ownerId);
-            Party party = new Party(owner, partyName);           // initialize
+            Party party = new Party(owner, partyName, description);           // initialize
             party = partyRepository.save(party);      // generate ID, properties etc
             party = addMember(party.getId(), owner);
             userService.saveUserInternal(owner);      // to register the party for it
@@ -212,7 +212,7 @@ public class PartyService {
     }
 
 
-    public Party getParty(int partyId) {
+    Party getParty(int partyId) {
         try {
             return partyRepository.findById(partyId).get();
         } catch (NoSuchElementException e) {
