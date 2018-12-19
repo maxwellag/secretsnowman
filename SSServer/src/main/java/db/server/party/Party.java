@@ -69,10 +69,17 @@ public class Party {
     }
 
 
-    public void addMember(User member) {
+    /**
+     * Adds member to this party if they are not already in it
+     * @param member
+     * @return True if the member was added successfully, false otherwise
+     */
+    public boolean addMember(User member) {
         if (!members.contains(member)) {
             members.add(member);
+            return true;
         }
+        return false;
     }
     public Pairing removeMember(User member) {
         members.remove(member);

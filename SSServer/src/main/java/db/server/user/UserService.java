@@ -92,13 +92,21 @@ public class UserService {
         }
     }
 
-    public void addPartyToUserInternal(User member, Party party) {
+    /**
+     * Adds a member to the party if they exist and are not already in the party
+     * @param member The member to add
+     * @param party The party to add the member to
+     * @return True if the User was successfully added, false otherwise
+     */
+    public boolean addPartyToUserInternal(User member, Party party) {
         member = getUser(member.getId());
         if (member != null) {
             if (!member.getParties().contains(party)) {
                 member.getParties().add(party);
                 userRepository.save(member);
+                return true;
             }
         }
+        return false;
     }
 }

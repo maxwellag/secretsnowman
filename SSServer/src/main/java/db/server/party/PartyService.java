@@ -5,10 +5,13 @@ import db.server.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Random;
 
 @Service
-public class PartyService {
+class PartyService {
 
     @Autowired
     private PartyRepository partyRepository;
@@ -17,9 +20,11 @@ public class PartyService {
     @Autowired
     private UserService userService;
 
-    public Party makeParty(int ownerId, String partyName, String description) {
+    Party makeParty(int ownerId, String partyName, String description) {
         if (userService.userExists(ownerId)) {
             User owner = userService.getUser(ownerId);
+            if (partyNameIsNotUnique(owner, partyName))
+                return new Party();
             Party party = new Party(owner, partyName, description);           // initialize
             party = partyRepository.save(party);      // generate ID, properties etc
             party = addMember(party.getId(), owner);
@@ -29,7 +34,7 @@ public class PartyService {
             return new Party();
     }
 
-    public List<Party> getPartiesWithMemberId(int memberId) {
+    List<Party> getPartiesWithMemberId(int memberId) {
         User member = userService.getUser(memberId);
         if (member == null) {
             return new ArrayList<>();
@@ -45,24 +50,26 @@ public class PartyService {
      * @param member The member to add to the party
      * @return The Party the member was added to (only used internally)
      */
-    public Party addMember(int partyId, User member) {
+    Party addMember(int partyId, User member) {
         Party party = getPartyById(partyId);
         if (party != null) {
             member = userService.getUser(member.getId());
             if (!member.equals(new User())) {
-                party.addMember(member);
+                // TODO check if the member is in the party
+                if (!party.addMember(member))
+                    return null;            // member is in the party already
                 userService.addPartyToUserInternal(member, party);
                 Pairing p = new Pairing(member, null, party);
                 party.addPairing(p);
+                resetPartyPairings(party);
                 pairingRepository.save(p);
                 return partyRepository.save(party);
             }
         }
-        resetPartyPairings(party);
         return null;
     }
 
-    public void removeMember(int groupId, User member) {
+    void removeMember(int groupId, User member) {
         Party party = getPartyById(groupId);
         member = userService.getUser(member.getId());
         if (party != null && member != null) {
@@ -73,12 +80,12 @@ public class PartyService {
             member.getParties().remove(party);
             userService.saveUserInternal(member);
         }
-        if (party.getMembers().size() < 1) {
+        if ((party != null ? party.getMembers().size() : 0) < 1) {
             throw new IllegalStateException("Party cannot have zero members!");
         }
     }
 
-    public Party makePairings(int partyId) {
+    Party makePairings(int partyId) {
         Party party = getPartyById(partyId);
         if (party == null) {
             return new Party();
@@ -94,7 +101,7 @@ public class PartyService {
      * @param gifter The member who is the gifter in the pairing
      * @return The party member on the receiving end of the pairing if any (may be null if pairings aren't made)
      */
-    public User getGiftReceiver(int partyId, User gifter) {
+    User getGiftReceiver(int partyId, User gifter) {
         Party party = getPartyById(partyId);
         if (party == null) {
             return new User();
@@ -107,6 +114,14 @@ public class PartyService {
         }
     }
 
+    Party getParty(int partyId) {
+        try {
+            return partyRepository.findById(partyId).get();
+        } catch (NoSuchElementException e) {
+            return new Party();
+        }
+    }
+
     private Party getPartyById(int partyId) {
         try {
             return partyRepository.findById(partyId).get();
@@ -116,29 +131,45 @@ public class PartyService {
     }
 
     private void randomizePairings(Party party) {
-        List<User> members = party.getMembers();
-        if (members.size() < 2)
+        List<Pairing> pairings = party.getPairings();
+        if (pairings.size() < 2)
             return;
         resetPartyPairings(party);                  // erase old pairings
         Random rand = new Random();
-        HashSet<Integer> used = new HashSet<>();
-        for (int i = 0; i < members.size(); i++) {
+        boolean[] indexUsed = new boolean[pairings.size()];
+        for (int i = 0; i < pairings.size(); i++) {
             Pairing p = party.getPairings().get(i);
             // technique to get positive integers only
-            int randIndex = ((rand.nextInt() % members.size()) + members.size()) % members.size();
-            for (int j = 0; randIndex == i || used.contains(randIndex); j++) {
-                randIndex = ++randIndex % members.size();
-                if (j == members.size()) {      // infinite loop/illegal state try again
-                    randomizePairings(party);
+            int randIndex = rand.nextInt(pairings.size());
+            if (i < pairings.size() - 1) {      // guaranteed to have a free, non-self index
+                while (randIndex == i || indexUsed[randIndex])
+                    randIndex = ++randIndex % pairings.size();
+            } else {
+                if (!indexUsed[i]) {    // This means that all other members are in a loop (must force insertion)
+                    while (randIndex == i) {
+                        randIndex = rand.nextInt(pairings.size());
+                    }
+                    User receiver = pairings.get(randIndex).getReceiver();
+                    pairings.get(randIndex).setReceiver(p.getGifter());
+                    p.setReceiver(receiver);
+                    pairingRepository.save(pairings.get(randIndex));
+                    pairingRepository.save(p);
+                    party.setPairingsAssigned(true);
+                    partyRepository.save(party);
                     return;
+                } else {
+                    while (randIndex == i || indexUsed[randIndex])  // find unused index
+                        randIndex = ++randIndex % pairings.size();
                 }
             }
             // Since members and pairings are not stored symmetrically (index 0 in members is not index 0 in pairings)
             // Have to use the pairings to ensure someone does not have themselves
-            p.setReceiver(party.getPairings().get(randIndex).getGifter());
+            indexUsed[randIndex] = true;
+            p.setReceiver(pairings.get(randIndex).getGifter());
             pairingRepository.save(p);
-            used.add(randIndex);
         }
+        party.setPairingsAssigned(true);
+        partyRepository.save(party);
     }
 
     /**
@@ -155,12 +186,11 @@ public class PartyService {
         partyRepository.save(party);
     }
 
-
-    Party getParty(int partyId) {
-        try {
-            return partyRepository.findById(partyId).get();
-        } catch (NoSuchElementException e) {
-            return new Party();
-        }
+    private boolean partyNameIsNotUnique(User owner, String partyName) {
+        List<Party> parties = partyRepository.findByOwner_Id(owner.getId());
+        for (Party p : parties)
+            if (p.getPartyName().equals(partyName))
+                return true;
+        return false;
     }
 }
