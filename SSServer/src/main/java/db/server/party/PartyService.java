@@ -121,71 +121,24 @@ public class PartyService {
             return;
         resetPartyPairings(party);                  // erase old pairings
         Random rand = new Random();
-        Stack<User> receivers = new Stack<>();      // for convenience of keeping track of what's left and quick remove
-        HashSet<Integer> used = new HashSet<>();    // used in initial setup of stack
-
-
+        HashSet<Integer> used = new HashSet<>();
         for (int i = 0; i < members.size(); i++) {
-            int selection = Math.abs(rand.nextInt()) % members.size();      // get random index to start at
-
-            while (used.contains(selection)) {                              // if this index has been used already
-                selection = (selection + 1) % members.size();
-            }
-
-            used.add(selection);
-            receivers.push(members.get(selection));
-        }
-        for (int i = 0; i < members.size(); i++) {          // iterate through each member, popping a member off stack
             Pairing p = party.getPairings().get(i);
-            User gifter = p.getGifter();
-            User receiver = receivers.pop();
-
-            if (receiver.equals(gifter)) {                  // get the next member and replace old receiver onto stack
-                if (receivers.isEmpty()) {                  // illegal state, try again
+            // technique to get positive integers only
+            int randIndex = ((rand.nextInt() % members.size()) + members.size()) % members.size();
+            for (int j = 0; randIndex == i || used.contains(randIndex); j++) {
+                randIndex = ++randIndex % members.size();
+                if (j == members.size()) {      // infinite loop/illegal state try again
                     randomizePairings(party);
-                    if (pairingsHaveBiDirectional(party)) // if there is a bidirectional relationship, retry
-                       randomizePairings(party);
                     return;
-                } else {
-                    User temp = receiver;
-                    receiver = receivers.pop();
-                    receivers.push(temp);
                 }
             }
-
-            p.setReceiver(receiver);
+            // Since members and pairings are not stored symmetrically (index 0 in members is not index 0 in pairings)
+            // Have to use the pairings to ensure someone does not have themselves
+            p.setReceiver(party.getPairings().get(randIndex).getGifter());
             pairingRepository.save(p);
+            used.add(randIndex);
         }
-        if (pairingsHaveBiDirectional(party))   // if there is a bidirectional relationship, retry
-            randomizePairings(party);
-        party.setPairingsAssigned(true);
-        partyRepository.save(party);
-    }
-
-    /**
-     * Loops through all pairings for this party and checks to see if any relationships are bidirectional
-     * i.e. User A is giving to User B AND User B is giving to User A
-     * Note: Using this method to check is incredibly inefficient; can be improved by altering the randomizePairings()
-     * method to check inside of it
-     * @param party The Party to check for bidirectionality
-     * @return True if any two pairings result in a bidirectional relationship
-     */
-    private boolean pairingsHaveBiDirectional(Party party) {
-        if (party == null || party.getMembers() == null || party.getPairings() == null)
-            return false;
-        if (party.getMembers().size() <= 3)     // If there are only 3 members, it is impossible
-            return false;
-        HashMap<User, User> pairMap = new HashMap<>();
-        for (Pairing p : party.getPairings()) {
-            pairMap.put(p.getGifter(), p.getReceiver());
-        }
-        for (User gifter : pairMap.keySet()) {
-            User receiver = pairMap.get(gifter);
-            User otherGifter = pairMap.get(receiver);
-            if (otherGifter.equals(gifter))
-                return true;
-        }
-        return false;
     }
 
     /**
@@ -194,15 +147,6 @@ public class PartyService {
      * @param party The Party to reset
      */
     private void resetPartyPairings(Party party) {
-//        for (Pairing p : pairingRepository.findByParty_Id(party.getId()))   // Pairings may not be fetched automatically
-//            pairingRepository.delete(p);
-//        List<Pairing> pairings = new ArrayList<>();
-//        for (User member : party.getMembers()) {
-//            Pairing p = new Pairing(member, null, party);
-//            pairings.add(p);
-//            pairingRepository.save(p);
-//        }
-//        party.setPairings(pairings);
         for (Pairing p : pairingRepository.findByParty_Id(party.getId())) {
             p.setReceiver(null);
             pairingRepository.save(p);
