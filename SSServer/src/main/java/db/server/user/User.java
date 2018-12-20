@@ -5,6 +5,7 @@ import db.server.party.Party;
 
 import javax.persistence.*;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 @Entity
@@ -14,6 +15,7 @@ public class User {
     public User() {
         id = -1;
         parties = new ArrayList<>();
+        wishList = new LinkedList<>();
     }
 
     @Id
@@ -23,6 +25,9 @@ public class User {
     private String username;
 
     private String password;
+
+    @OneToMany
+    private List<WishListItem> wishList;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "User_Party",
@@ -38,31 +43,38 @@ public class User {
         this.id = id;
     }
 
-    public String getUsername() {
+    String getUsername() {
         return username;
     }
-    public void setUsername(String username) {
+    void setUsername(String username) {
         this.username = username;
     }
 
     public void setPassword(String password) {
         this.password = password;
     }
-    public void setPassword(User other) {
+    void setPassword(User other) {
         this.password = other.password;
     }
 
     public List<Party> getParties() {
         return parties;
     }
-    public void setParties(List<Party> parties) {
+    void setParties(List<Party> parties) {
         this.parties = parties;
     }
 
-    public boolean passwordMatch(User other) {
+    boolean passwordMatch(User other) {
         if (password == null)
             return false;
         return password.equals(other.password);
+    }
+
+    void setWishList(List<WishListItem> list) {
+        this.wishList = list;
+    }
+    List<WishListItem> getWishList() {
+        return wishList;
     }
 
     /**

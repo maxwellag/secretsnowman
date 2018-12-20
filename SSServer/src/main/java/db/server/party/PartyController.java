@@ -32,6 +32,11 @@ public class PartyController {
         return partyService.getPartiesWithMemberId(member.getId());
     }
 
+    @RequestMapping("/getPartiesWithOwner")
+    public List<Party> getPartiesWithOwner(@RequestBody User owner) {
+        return partyService.getPartiesWithOwnerId(owner.getId());
+    }
+
     @RequestMapping("/addMember/{partyId}")
     public void addMember(@RequestBody User member, @PathVariable int partyId) {
         partyService.addMember(partyId, member);

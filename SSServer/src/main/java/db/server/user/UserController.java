@@ -3,6 +3,8 @@ package db.server.user;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping(path="/users")
 public class UserController {
@@ -33,11 +35,11 @@ public class UserController {
 
     /**
      * Attempts to delete a User with the specified ID
-     * @param userId
+     * @param user User to be deleted
      */
-    @RequestMapping(method = RequestMethod.DELETE, value = "/{userId}")
-    private void deleteUser(@PathVariable int userId) {
-        userService.deleteUser(userId);
+    @RequestMapping(method = RequestMethod.DELETE, value = "/delete")
+    private void deleteUser(@RequestBody User user) {
+        userService.deleteUser(user);
     }
 
     @RequestMapping("/update")
@@ -45,4 +47,18 @@ public class UserController {
         return userService.updateUser(user);
     }
 
+    @RequestMapping("/addItem/{item}")
+    private List<String> addItemToWishList(@RequestBody User user, @PathVariable String item) {
+        return userService.addItemToWishList(user, item);
+    }
+
+    @RequestMapping("/removeItem/{index}")
+    private List<String> removeItemFromWishList(@RequestBody User user, @PathVariable int index) {
+        return userService.removeItemFromWishList(user, index);
+    }
+
+    @RequestMapping("/getWishList")
+    private List<String> getWishList(@RequestBody User user) {
+        return userService.getWishList(user);
+    }
 }

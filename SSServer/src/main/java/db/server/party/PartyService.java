@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 @Service
 class PartyService {
 
@@ -55,14 +56,13 @@ class PartyService {
         if (party != null) {
             member = userService.getUser(member.getId());
             if (!member.equals(new User())) {
-                // TODO check if the member is in the party
                 if (!party.addMember(member))
                     return null;            // member is in the party already
                 userService.addPartyToUserInternal(member, party);
                 Pairing p = new Pairing(member, null, party);
                 party.addPairing(p);
-                resetPartyPairings(party);
                 pairingRepository.save(p);
+                resetPartyPairings(party);
                 return partyRepository.save(party);
             }
         }
@@ -122,6 +122,11 @@ class PartyService {
         }
     }
 
+    List<Party> getPartiesWithOwnerId(int ownerId) {
+        List<Party> parties = partyRepository.findByOwner_Id(ownerId);
+        return parties == null ? new ArrayList<>() : parties;
+    }
+
     private Party getPartyById(int partyId) {
         try {
             return partyRepository.findById(partyId).get();
@@ -178,7 +183,7 @@ class PartyService {
      * @param party The Party to reset
      */
     private void resetPartyPairings(Party party) {
-        for (Pairing p : pairingRepository.findByParty_Id(party.getId())) {
+        for (Pairing p : party.getPairings()) {
             p.setReceiver(null);
             pairingRepository.save(p);
         }
