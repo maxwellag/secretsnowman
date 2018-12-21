@@ -12,7 +12,7 @@ import java.util.Random;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 @Service
-class PartyService {
+public class PartyService {
 
     @Autowired
     private PartyRepository partyRepository;
@@ -125,6 +125,14 @@ class PartyService {
     List<Party> getPartiesWithOwnerId(int ownerId) {
         List<Party> parties = partyRepository.findByOwner_Id(ownerId);
         return parties == null ? new ArrayList<>() : parties;
+    }
+
+    public List<User> getGivers(User user) {
+        List<Pairing> pairings = pairingRepository.findByReceiver_Id(user.getId());
+        List<User> givers = new ArrayList<>();
+        for (Pairing p : pairings)
+            givers.add(p.getGifter());
+        return givers;
     }
 
     private Party getPartyById(int partyId) {

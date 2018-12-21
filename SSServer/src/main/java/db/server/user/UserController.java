@@ -1,5 +1,6 @@
 package db.server.user;
 
+import db.server.notification.Notification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -60,5 +61,15 @@ public class UserController {
     @RequestMapping("/getWishList")
     private List<String> getWishList(@RequestBody User user) {
         return userService.getWishList(user);
+    }
+
+    @RequestMapping("/getNotifications")
+    private List<Notification> getNotifications(@RequestBody User user) {
+        return userService.getNotificationsForUser(user);
+    }
+
+    @RequestMapping("/markNotification/{status}")
+    private List<Notification> markNotification(@RequestBody Notification n, @PathVariable boolean status) {
+        return userService.markNotification(n, status);
     }
 }

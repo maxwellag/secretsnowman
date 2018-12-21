@@ -1,6 +1,10 @@
 package db.server.user;
 
+import db.server.notification.ItemNotification;
+import db.server.notification.Notification;
+import db.server.notification.NotificationRepository;
 import db.server.party.Party;
+import db.server.party.PartyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,13 +14,17 @@ import java.util.*;
 @Service
 public class UserService {
     @Autowired
-    private UserRepository userRepository;
+    private UserRepository userRepo;
     @Autowired
-    private WishListItemRepository itemRepository;
+    private WishListItemRepository itemRepo;
+    @Autowired
+    private NotificationRepository notificationRepo;
+    @Autowired
+    private PartyService partyService;
 
     public Hashtable<String, User> getAllUsers() {
         Hashtable<String, User> users = new Hashtable<>();
-        for (User u : userRepository.findAll()) {
+        for (User u : userRepo.findAll()) {
             users.put(u.getUsername(), u);
         }
         return users;
@@ -24,14 +32,14 @@ public class UserService {
 
     User addUser(User user) {
         if (usernameAvailable(user.getUsername()))
-            return userRepository.save(user);
+            return userRepo.save(user);
         else
             return new User();
     }
 
     public User getUser(int userId) {
         try {
-            User ret = userRepository.findById(userId).get();
+            User ret = userRepo.findById(userId).get();
             ret.setWishList(getWishListItems(ret));
             return ret;
         } catch (NoSuchElementException e) {
@@ -40,7 +48,7 @@ public class UserService {
     }
 
     User login(User user) {
-        List<User> users = userRepository.findByUsername(user.getUsername());
+        List<User> users = userRepo.findByUsername(user.getUsername());
         if (users == null || users.size() != 1)
             return new User();
         if (users.get(0).passwordMatch(user))
@@ -50,7 +58,7 @@ public class UserService {
     }
 
     void deleteUser(User user) {
-        userRepository.deleteById(user.getId());
+        userRepo.deleteById(user.getId());
         // TODO Delete all dependencies
     }
 
@@ -62,7 +70,7 @@ public class UserService {
         oldUser.setUsername(user.getUsername());
         oldUser.setPassword(user);
         oldUser.setParties(user.getParties());
-        return userRepository.save(oldUser);
+        return userRepo.save(oldUser);
     }
 
     List<String> addItemToWishList(User user, String item) {
@@ -71,8 +79,11 @@ public class UserService {
             return new ArrayList<>();
         }
         WishListItem listItem = new WishListItem(user, item);
-        listItem = itemRepository.save(listItem);
+        listItem = itemRepo.save(listItem);
         user.getWishList().add(listItem);
+        // TODO notify all gifters
+        for (User g : partyService.getGivers(user))
+            notifyUser(g, "An item has been added to your buddy's wishlist:\n" + item, user);
         List<String> strings = new LinkedList<>();
         for (WishListItem i : user.getWishList())
             strings.add(i.getEntry());
@@ -86,7 +97,7 @@ public class UserService {
             if (user == null || user.equals(new User()))
                 return new ArrayList<>();
             WishListItem item = user.getWishList().remove(index);   // could have IOOBE here
-            itemRepository.delete(item);
+            itemRepo.delete(item);
         } finally {
             if (user != null)
                 for (WishListItem i : user.getWishList())
@@ -105,19 +116,36 @@ public class UserService {
         return strings;
     }
 
+    List<Notification> getNotificationsForUser(User user) {
+        user = getUser(user.getId());
+        if (user == null)
+            return new ArrayList<>();
+        return notificationRepo.findByOwner_Id(user.getId());
+    }
+
+    List<Notification> markNotification(Notification n, boolean status) {
+        try {
+            n = notificationRepo.findById(n.getId()).get();     // NSEE could happen here
+            n.setMarkedAsRead(status);
+            notificationRepo.save(n);
+        } finally {
+            return getNotificationsForUser(n.getOwner());
+        }
+    }
+
     public User saveUserInternal(User user) {
         User oldUser;
         try {
-            oldUser = userRepository.findById(user.getId()).get();
+            oldUser = userRepo.findById(user.getId()).get();
         } catch (NoSuchElementException e) {
             return new User();
         }
         oldUser.setParties(user.getParties());
-        return userRepository.save(oldUser);
+        return userRepo.save(oldUser);
     }
 
     private boolean usernameAvailable(String username) {
-        List<User> users = userRepository.findByUsername(username);
+        List<User> users = userRepo.findByUsername(username);
         return users == null || users.size() != 1;
     }
 
@@ -126,7 +154,7 @@ public class UserService {
             return false;
         else {
             try {
-                userRepository.findById(userId).get();  // NSEE could happen here
+                userRepo.findById(userId).get();  // NSEE could happen here
                 return true;
             } catch (NoSuchElementException e) {
                 return false;
@@ -145,7 +173,7 @@ public class UserService {
         if (member != null) {
             if (!member.getParties().contains(party)) {
                 member.getParties().add(party);
-                userRepository.save(member);
+                userRepo.save(member);
                 return true;
             }
         }
@@ -153,9 +181,23 @@ public class UserService {
     }
 
     private List<WishListItem> getWishListItems(User user) {
-        List<WishListItem> items = itemRepository.findByOwner_Id(user.getId());
+        List<WishListItem> items = itemRepo.findByOwner_Id(user.getId());
         if (items == null || items.isEmpty())
             return new ArrayList<>();
         return items;
+    }
+
+    private void notifyUser(User user, String contents, Object o) {
+        Notification not = null;
+        if (o instanceof User) {        // right now, this case is a user has added an item to their wishlist only
+            User giftee = (User) o;
+            not = new ItemNotification(user, contents, giftee);
+        }
+//        else if (o instanceof Party) {
+//            Party p = (Party) p;
+//            not = new PartyNotification(user, contents, p);
+//        }
+        if (not != null)
+            notificationRepo.save(not);
     }
 }
