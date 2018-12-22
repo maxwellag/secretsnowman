@@ -43,7 +43,7 @@ public class User {
         this.id = id;
     }
 
-    String getUsername() {
+    public String getUsername() {
         return username;
     }
     void setUsername(String username) {

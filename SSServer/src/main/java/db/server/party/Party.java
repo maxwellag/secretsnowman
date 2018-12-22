@@ -57,7 +57,7 @@ public class Party {
     public void setPartyName(String partyName) {
         this.partyName = partyName;
     }
-    public String getPartyName() {
+    String getPartyName() {
         return partyName;
     }
 
@@ -71,46 +71,48 @@ public class Party {
 
     /**
      * Adds member to this party if they are not already in it
-     * @param member
+     * @param member Member to be added
      * @return True if the member was added successfully, false otherwise
      */
-    public boolean addMember(User member) {
+    boolean addMember(User member) {
         if (!members.contains(member)) {
             members.add(member);
             return true;
         }
         return false;
     }
-    public Pairing removeMember(User member) {
+    Pairing removeMember(User member) {
         members.remove(member);
         if (pairings == null || pairings.isEmpty())
             return null;
         for (int i = 0; i < pairings.size(); i++)
             if (pairings.get(i).getGifter().equals(member)) {
-                Pairing ret = pairings.remove(i);
-                return ret;
+                return pairings.remove(i);
             }
         return null;
     }
+    public void setMembers(List<User> members) {
+        this.members = members;
+    }
 
-    public List<Pairing> getPairings() {
+    List<Pairing> getPairings() {
         return pairings;
     }
     public void setPairings(List<Pairing> pairings) {
         this.pairings = pairings;
     }
-    public void addPairing(Pairing p) {
+    void addPairing(Pairing p) {
         this.pairings.add(p);
     }
 
-    public void setPairingsAssigned(boolean value) {
+    void setPairingsAssigned(boolean value) {
         pairingsAssigned = value;
     }
-    public boolean arePairingsAssigned() {
+    boolean arePairingsAssigned() {
         return pairingsAssigned;
     }
 
-    public List<User> getMembers() {
+    List<User> getMembers() {
         return members;
     }
 }

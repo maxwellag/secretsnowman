@@ -1,8 +1,6 @@
 package db.server.user;
 
-import db.server.notification.ItemNotification;
-import db.server.notification.Notification;
-import db.server.notification.NotificationRepository;
+import db.server.notification.NotificationService;
 import db.server.party.Party;
 import db.server.party.PartyService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +16,7 @@ public class UserService {
     @Autowired
     private WishListItemRepository itemRepo;
     @Autowired
-    private NotificationRepository notificationRepo;
+    private NotificationService notificationService;
     @Autowired
     private PartyService partyService;
 
@@ -83,7 +81,7 @@ public class UserService {
         user.getWishList().add(listItem);
         // TODO notify all gifters
         for (User g : partyService.getGivers(user))
-            notifyUser(g, "An item has been added to your buddy's wishlist:\n" + item, user);
+            notificationService.notifyUser(g, "An item has been added to your buddy's wishlist:\n" + item, user);
         List<String> strings = new LinkedList<>();
         for (WishListItem i : user.getWishList())
             strings.add(i.getEntry());
@@ -114,23 +112,6 @@ public class UserService {
         for (WishListItem i : user.getWishList())
             strings.add(i.getEntry());
         return strings;
-    }
-
-    List<Notification> getNotificationsForUser(User user) {
-        user = getUser(user.getId());
-        if (user == null)
-            return new ArrayList<>();
-        return notificationRepo.findByOwner_Id(user.getId());
-    }
-
-    List<Notification> markNotification(Notification n, boolean status) {
-        try {
-            n = notificationRepo.findById(n.getId()).get();     // NSEE could happen here
-            n.setMarkedAsRead(status);
-            notificationRepo.save(n);
-        } finally {
-            return getNotificationsForUser(n.getOwner());
-        }
     }
 
     public User saveUserInternal(User user) {
@@ -182,22 +163,8 @@ public class UserService {
 
     private List<WishListItem> getWishListItems(User user) {
         List<WishListItem> items = itemRepo.findByOwner_Id(user.getId());
-        if (items == null || items.isEmpty())
+        if (items == null)
             return new ArrayList<>();
         return items;
-    }
-
-    private void notifyUser(User user, String contents, Object o) {
-        Notification not = null;
-        if (o instanceof User) {        // right now, this case is a user has added an item to their wishlist only
-            User giftee = (User) o;
-            not = new ItemNotification(user, contents, giftee);
-        }
-//        else if (o instanceof Party) {
-//            Party p = (Party) p;
-//            not = new PartyNotification(user, contents, p);
-//        }
-        if (not != null)
-            notificationRepo.save(not);
     }
 }

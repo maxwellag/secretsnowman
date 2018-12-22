@@ -24,7 +24,7 @@ public class PartyController {
 
     @RequestMapping("/get/{partyId}")
     public Party getParty(@PathVariable int partyId) {
-        return partyService.getParty(partyId);
+        return partyService.getPartyById(partyId);
     }
 
     @RequestMapping("/getParties")

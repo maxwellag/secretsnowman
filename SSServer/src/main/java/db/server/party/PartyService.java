@@ -1,10 +1,12 @@
 package db.server.party;
 
+import db.server.notification.NotificationService;
 import db.server.user.User;
 import db.server.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -20,6 +22,8 @@ public class PartyService {
     private PairingRepository pairingRepository;
     @Autowired
     private UserService userService;
+    @Autowired
+    private NotificationService notificationService;
 
     Party makeParty(int ownerId, String partyName, String description) {
         if (userService.userExists(ownerId)) {
@@ -44,6 +48,15 @@ public class PartyService {
         }
     }
 
+    @Transactional
+    Party getPartyById(int partyId) {
+        try {
+            return partyRepository.findById(partyId).get();
+        } catch (NoSuchElementException e) {
+            return null;
+        }
+    }
+
     /**
      * Adds a member to the party, adds the party to the member, creates a pairing for the member
      * all if partyId and member exist.
@@ -63,6 +76,8 @@ public class PartyService {
                 party.addPairing(p);
                 pairingRepository.save(p);
                 resetPartyPairings(party);
+                notificationService.notifyUser(member, "You have been added to party:\n" +
+                                                party.getPartyName(), party);
                 return partyRepository.save(party);
             }
         }
@@ -71,18 +86,25 @@ public class PartyService {
 
     void removeMember(int groupId, User member) {
         Party party = getPartyById(groupId);
+        if ((party != null ? party.getMembers().size() : 0) < 1) {
+            throw new IllegalStateException("Party cannot have zero members!");
+        }
         member = userService.getUser(member.getId());
-        if (party != null && member != null) {
+        if (member != null) {
             Pairing p = party.removeMember(member);
             pairingRepository.delete(p);
+            // pairings were assigned and a member was successfully removed, notify all members
+            if (party.arePairingsAssigned() && p != null) {
+                String message = "Due to a member being removed, your previous pairings are now void.";
+                for (User otherMember : party.getMembers())
+                    notificationService.notifyUser(otherMember, message, party);
+            }
             resetPartyPairings(party);              // All pairings are now void due to incomplete matchings
             party = partyRepository.save(party);
             member.getParties().remove(party);
             userService.saveUserInternal(member);
         }
-        if ((party != null ? party.getMembers().size() : 0) < 1) {
-            throw new IllegalStateException("Party cannot have zero members!");
-        }
+
     }
 
     Party makePairings(int partyId) {
@@ -91,6 +113,12 @@ public class PartyService {
             return new Party();
         } else {
             randomizePairings(party);
+            String message = "Pairings have been assigned for a party you're in!\n" +
+                    "You have: ";
+            for (Pairing p : party.getPairings()) {
+                notificationService.notifyUser(p.getGifter(), message +
+                        p.getReceiver().getUsername(), party);
+            }
             return partyRepository.save(party);
         }
     }
@@ -114,14 +142,6 @@ public class PartyService {
         }
     }
 
-    Party getParty(int partyId) {
-        try {
-            return partyRepository.findById(partyId).get();
-        } catch (NoSuchElementException e) {
-            return new Party();
-        }
-    }
-
     List<Party> getPartiesWithOwnerId(int ownerId) {
         List<Party> parties = partyRepository.findByOwner_Id(ownerId);
         return parties == null ? new ArrayList<>() : parties;
@@ -133,14 +153,6 @@ public class PartyService {
         for (Pairing p : pairings)
             givers.add(p.getGifter());
         return givers;
-    }
-
-    private Party getPartyById(int partyId) {
-        try {
-            return partyRepository.findById(partyId).get();
-        } catch (NoSuchElementException e) {
-            return null;
-        }
     }
 
     private void randomizePairings(Party party) {
