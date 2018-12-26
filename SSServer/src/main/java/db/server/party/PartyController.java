@@ -16,6 +16,15 @@ public class PartyController {
     @Autowired
     private PartyService partyService;
 
+    /**
+     * This method makes a party with the string description as the first object in the
+     * String[] body. (It is an array because I don't know how bare Strings work as
+     * JSON objects)
+     * @param description The description for the party
+     * @param ownerId The Id of the owner who is making the party
+     * @param partyName The name of the party being made (must be unique to that user)
+     * @return The constructed Party with the specified fields (id = -1 if error)
+     */
     @RequestMapping("/make/{ownerId}/{partyName}")
     public Party makeParty(@RequestBody String[] description, @PathVariable int ownerId,
                            @PathVariable String partyName) {
